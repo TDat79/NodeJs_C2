@@ -5,11 +5,11 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var mongoose = require('mongoose');
 
-
-//mongodb://localhost:27017
-
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var userRoutes = require('./routes/userRoutes'); // Thêm route cho User
+var roleRoutes = require('./routes/roleRoutes'); // Thêm route cho Role
+var authRouter = require('./routes/auth');
 
 var app = express();
 
@@ -24,8 +24,6 @@ mongoose.connection.on('disconnected', () => {
 mongoose.connection.on('connected', () => {
   console.log('MongoDB connected');
 });
-
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
@@ -38,16 +36,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/products', require('./routes/product'));
-app.use('/categories', require('./routes/category'));
-
+app.use('/api/users', userRoutes); // Route mới cho User
+app.use('/api/roles', roleRoutes); // Route mới cho Role
+app.use('/api/auth', authRouter);
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
+app.use(function(req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function (err, req, res, next) {
+app.use(function(err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
@@ -58,4 +56,3 @@ app.use(function (err, req, res, next) {
 });
 
 module.exports = app;
-
