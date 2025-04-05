@@ -1,40 +1,104 @@
-let mongoose = require('mongoose');
-const { boolean } = require('webidl-conversions');
-let productSchema = mongoose.Schema({
-    productName:{
-        type:String,
-        required:true,
-        unique:true
+const mongoose = require('mongoose');
+
+const productSchema = mongoose.Schema({
+    productName: {
+        type: String,
+        required: true
     },
-    price:{
-        type:Number,
-        min:0,
-        default:1
+    description: {
+        type: String,
+        required: true
     },
-    quantity:{
-        type:Number,
-        min:0,
-        default:1
+    price: {
+        type: Number,
+        required: true,
+        min: 0
     },
-    description:{
-        type:String,
-        default:""
+    categoryID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: true
     },
-    imgURL:{
-        type:String,
-        default:""
+    quantity: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
     },
-    categoryID:{
-        type:mongoose.Types.ObjectId,
-        ref:"category",
-        required:true
+    images: [{
+        type: String
+    }],
+    isDeleted: {
+        type: Boolean,
+        default: false
     },
-    isDeleted:{
-        type:Boolean,
-        default:false
+    deletedAt: {
+        type: Date,
+        default: null
+    },
+    status: {
+        type: String,
+        enum: ['active', 'inactive', 'outOfStock'],
+        default: 'active'
+    },
+    discount: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 0
+    },
+    rating: {
+        type: Number,
+        min: 0,
+        max: 5,
+        default: 0
+    },
+    numReviews: {
+        type: Number,
+        default: 0
     }
-},{
-    timestamps:true
-})
-module.exports=
-mongoose.model('product',productSchema)
+}, {
+    timestamps: true
+});
+
+// Tạo index
+productSchema.index({ productName: 'text', description: 'text' });
+productSchema.index({ isDeleted: 1, categoryID: 1, status: 1 });
+
+// Query helpers
+productSchema.query.notDeleted = function() {
+    return this.where({ isDeleted: false });
+};
+
+productSchema.query.onlyDeleted = function() {
+    return this.where({ isDeleted: true });
+};
+
+productSchema.query.withDeleted = function() {
+    return this;
+};
+
+productSchema.query.active = function() {
+    return this.where({ status: 'active' });
+};
+
+// Tính giá sau khi giảm giá
+productSchema.virtual('finalPrice').get(function() {
+    return this.price * (1 - this.discount / 100);
+});
+
+// Đảm bảo virtuals được include khi chuyển đổi sang JSON
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
+
+// Middleware để tự động cập nhật status dựa trên quantity
+productSchema.pre('save', function(next) {
+    if (this.isModified('quantity')) {
+        this.status = this.quantity > 0 ? 'active' : 'outOfStock';
+    }
+    next();
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+module.exports = Product;

@@ -12,7 +12,7 @@ router.post('/signup', async function (req, res, next) {
       body.username,
       body.password,
       body.email,
-      'user'
+      "user"
     )
     res.status(200).send({
       success: true,

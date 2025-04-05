@@ -80,4 +80,27 @@ router.put('/:id', async function (req, res, next) {
   }
 });
 
+// Route để admin tạo user mới với role tùy chọn
+router.post('/create', 
+  check_authentication, 
+  check_authorization(['admin']), 
+  async function(req, res, next) {
+      try {
+          const { username, password, email, role } = req.body;
+          const result = await userController.createUser(
+              username,
+              password,
+              email,
+              role || 'user' // nếu không chỉ định role thì mặc định là 'user'
+          );
+          res.status(201).send({
+              success: true,
+              data: result
+          });
+      } catch (error) {
+          next(error);
+      }
+  }
+);
+
 module.exports = router;
